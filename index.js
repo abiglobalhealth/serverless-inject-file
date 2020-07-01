@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('fs');
+const { dirname } = require('path')
 
 const BACKUP_SUFFIX = '-bckup'
 const { name: PLUGIN_NAME } = require('./package.json')
@@ -29,11 +30,14 @@ class ServerlessPlugin {
 
   injectFile(fileName) {
     const backupFileName = fileName + BACKUP_SUFFIX
+    const directory = dirname(fileName)
 
     try {
       if (fs.existsSync(fileName)) {
         fs.renameSync(fileName, backupFileName)
         this.log('created backup for ' + fileName)
+      } else {
+        fs.mkdirSync(directory, { recursive: true })
       }
 
       fs.writeFileSync(fileName, this.options[fileName])
@@ -44,6 +48,8 @@ class ServerlessPlugin {
         if (fs.existsSync(backupFileName)) {
           fs.renameSync(backupFileName, fileName)
           this.log('restored backup for ' + fileName)
+        } else if (fs.readdirSync(directory).length === 0) {
+          fs.rmdirSync(directory, { recursive: true })
         }
       });
 
